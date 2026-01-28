@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<title>Ötödölő</title>
+<style>
+  canvas { border:1px solid black; }
+</style>
+</head>
+<body>
+
+<h2>Ötödölő</h2>
+<canvas id="board" width="600" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById("board");
+const ctx = canvas.getContext("2d");
+
+const SIZE = 15;
+const CELL = canvas.width / SIZE;
+let board = [];
+
+function drawBoard() {
+    ctx.clearRect(0,0,600,600);
+    for (let i=0;i<SIZE;i++) {
+        ctx.beginPath();
+        ctx.moveTo(i*CELL,0);
+        ctx.lineTo(i*CELL,600);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0,i*CELL);
+        ctx.lineTo(600,i*CELL);
+        ctx.stroke();
+    }
+
+    for (let y=0;y<SIZE;y++) {
+        for (let x=0;x<SIZE;x++) {
+            if (board[y][x]) {
+                ctx.beginPath();
+                ctx.arc(
+                    x*CELL + CELL/2,
+                    y*CELL + CELL/2,
+                    CELL/3, 0, Math.PI*2
+                );
+                ctx.fillStyle = board[y][x] === 1 ? "black" : "red";
+                ctx.fill();
+            }
+        }
+    }
+}
+
+canvas.addEventListener("click", e => {
+    const x = Math.floor(e.offsetX / CELL);
+    const y = Math.floor(e.offsetY / CELL);
+
+    fetch("game.php", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({x,y})
+    }).then(loadState);
+});
+
+function loadState() {
+    fetch("game.php")
+        .then(r => r.json())
+        .then(data => {
+            board = data.board;
+            drawBoard();
+        });
+}
+
+loadState();
+setInterval(loadState, 1000); // szinkron több géphez
+</script>
+
+</body>
+</html>
