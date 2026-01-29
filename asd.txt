@@ -11,3 +11,15 @@ tobbjatekos
 nevvalasztas az elejen 
 
 design
+
+
+jatekosok listaja
+input jatekosnev
+input kod
+ready gomb
+
+a fő játékosnak 
+egy mezo ahol meg lehet adni hany ember lephet be
+egy inditas gomb
+
+a jatekos allapatokat json-bol lehet majd kinyerni es azt is hogy ki a fo jatekos
