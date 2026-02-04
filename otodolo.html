@@ -1,77 +1,208 @@
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-<meta charset="UTF-8">
-<title>Ötödölő</title>
-<style>
-  canvas { border:1px solid black; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gomoku Pro – 50×50</title>
+
+  <style>
+    :root {
+      --bg-color: #1a1a2e;
+      --card-bg: #16213e;
+      --accent-color: #4ecca3;
+      --text-color: #eeeeee;
+      --cell-size: 25px;
+      --x-color: #ff4b2b;
+      --o-color: #00d2ff;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      margin-top: 20px;
+      margin-bottom: 10px;
+      color: var(--accent-color);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .status-panel {
+      margin-bottom: 20px;
+      padding: 15px 30px;
+      background: var(--card-bg);
+      border-radius: 50px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .current-player {
+      padding: 2px 10px;
+      border-radius: 5px;
+    }
+
+    .player-X { color: var(--x-color); }
+    .player-O { color: var(--o-color); }
+
+    /* A tábla tárolója, ami engedi a görgetést */
+    .board-container {
+      max-width: 95vw;
+      max-height: 70vh;
+      overflow: auto;
+      border: 3px solid var(--card-bg);
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      background-color: #222;
+    }
+
+    #board {
+      display: grid;
+      /* Dinamikusan generáljuk a gridet JS-ből, vagy fixen hagyjuk */
+      grid-template-columns: repeat(50, var(--cell-size));
+      grid-template-rows: repeat(50, var(--cell-size));
+      background-color: #444; /* Vonalak színe */
+      gap: 1px;
+      padding: 1px;
+    }
+
+    .cell {
+      width: var(--cell-size);
+      height: var(--cell-size);
+      background: var(--bg-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .cell:hover {
+      background: #252545;
+    }
+
+    .cell.taken {
+      cursor: default;
+    }
+
+    .cell[data-player="X"] { color: var(--x-color); }
+    .cell[data-player="O"] { color: var(--o-color); }
+
+    /* Görgetősáv dizájn */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-color);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--card-bg);
+      border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-color);
+    }
+  </style>
 </head>
 <body>
 
-<h2>Ötödölő</h2>
-<canvas id="board" width="600" height="600"></canvas>
+<h1>Ötödölő</h1>
+
+<div class="status-panel">
+  Soron következik: <span id="turn-indicator" class="player-X">X</span>
+</div>
+
+<div class="board-container">
+  <div id="board"></div>
+</div>
 
 <script>
-const canvas = document.getElementById("board");
-const ctx = canvas.getContext("2d");
+  const boardSize = 50;
+  const boardElement = document.getElementById("board");
+  const turnIndicator = document.getElementById("turn-indicator");
+  let currentPlayer = "X";
+  let gameOver = false;
 
-const SIZE = 15;
-const CELL = canvas.width / SIZE;
-let board = [];
+  const grid = [];
 
-function drawBoard() {
-    ctx.clearRect(0,0,600,600);
-    for (let i=0;i<SIZE;i++) {
-        ctx.beginPath();
-        ctx.moveTo(i*CELL,0);
-        ctx.lineTo(i*CELL,600);
-        ctx.stroke();
+  // Tábla felépítése
+  for (let row = 0; row < boardSize; row++) {
+    grid[row] = [];
+    for (let col = 0; col < boardSize; col++) {
+      grid[row][col] = "";
 
-        ctx.beginPath();
-        ctx.moveTo(0,i*CELL);
-        ctx.lineTo(600,i*CELL);
-        ctx.stroke();
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.dataset.row = row;
+      cell.dataset.col = col;
+
+      cell.addEventListener("click", () => handleClick(cell, row, col));
+      boardElement.appendChild(cell);
+    }
+  }
+
+  function handleClick(cell, row, col) {
+    if (grid[row][col] !== "" || gameOver) return;
+
+    // Adat mentése
+    grid[row][col] = currentPlayer;
+    cell.textContent = currentPlayer;
+    cell.dataset.player = currentPlayer;
+    cell.classList.add("taken");
+
+    if (checkWin(row, col)) {
+      gameOver = true;
+      setTimeout(() => {
+        alert("Gratulálok! A győztes: " + currentPlayer);
+        location.reload(); // Új játék
+      }, 100);
+      return;
     }
 
-    for (let y=0;y<SIZE;y++) {
-        for (let x=0;x<SIZE;x++) {
-            if (board[y][x]) {
-                ctx.beginPath();
-                ctx.arc(
-                    x*CELL + CELL/2,
-                    y*CELL + CELL/2,
-                    CELL/3, 0, Math.PI*2
-                );
-                ctx.fillStyle = board[y][x] === 1 ? "black" : "red";
-                ctx.fill();
-            }
-        }
+    // Játékos váltás
+    currentPlayer = currentPlayer === "X" ? "O" : "X";
+    
+    // UI frissítése
+    turnIndicator.textContent = currentPlayer;
+    turnIndicator.className = "player-" + currentPlayer;
+  }
+
+  function checkWin(row, col) {
+    return (
+      count(row, col, 1, 0) + count(row, col, -1, 0) >= 4 || // függőleges
+      count(row, col, 0, 1) + count(row, col, 0, -1) >= 4 || // vízszintes
+      count(row, col, 1, 1) + count(row, col, -1, -1) >= 4 || // átló \
+      count(row, col, 1, -1) + count(row, col, -1, 1) >= 4    // átló /
+    );
+  }
+
+  function count(row, col, dRow, dCol) {
+    let r = row + dRow;
+    let c = col + dCol;
+    let counter = 0;
+
+    while (
+      r >= 0 && r < boardSize &&
+      c >= 0 && c < boardSize &&
+      grid[r][c] === currentPlayer
+    ) {
+      counter++;
+      r += dRow;
+      c += dCol;
     }
-}
-
-canvas.addEventListener("click", e => {
-    const x = Math.floor(e.offsetX / CELL);
-    const y = Math.floor(e.offsetY / CELL);
-
-    fetch("game.php", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({x,y})
-    }).then(loadState);
-});
-
-function loadState() {
-    fetch("game.php")
-        .then(r => r.json())
-        .then(data => {
-            board = data.board;
-            drawBoard();
-        });
-}
-
-loadState();
-setInterval(loadState, 1000); // szinkron több géphez
+    return counter;
+  }
 </script>
 
 </body>

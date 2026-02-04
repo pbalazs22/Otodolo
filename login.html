@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gomoku Online - pepa.hu API</title>
+    <style>
+        :root {
+            --bg: #1a1a2e; --card: #16213e; --accent: #4ecca3;
+            --text: #eeeeee; --x: #ff4b2b; --o: #00d2ff;
+        }
+        body {
+            font-family: sans-serif; background: var(--bg); color: var(--text);
+            margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+        }
+
+        /* Lobby & Controls */
+        .controls {
+            background: var(--card); padding: 20px; border-radius: 10px;
+            margin: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 90%; max-width: 500px;
+        }
+        .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        input, button { padding: 8px; border-radius: 4px; border: none; }
+        input { background: #0f3460; color: white; }
+        button { background: var(--accent); color: #1a1a2e; font-weight: bold; cursor: pointer; }
+        button:hover { opacity: 0.8; }
+
+        /* Játéktér középre */
+        #game-container {
+            display: none; flex-direction: column; align-items: center; width: 100%;
+        }
+        .board-wrapper {
+            max-width: 95vw; max-height: 70vh; overflow: auto;
+            border: 3px solid var(--card); border-radius: 8px; background: #222;
+        }
+        #board {
+            display: grid; grid-template-columns: repeat(50, 25px); grid-template-rows: repeat(50, 25px);
+            gap: 1px; background: #444; padding: 1px;
+        }
+        .cell {
+            width: 25px; height: 25px; background: var(--bg);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-weight: bold; font-size: 16px;
+        }
+        .cell:hover { background: #252545; }
+        .cell.X { color: var(--x); }
+        .cell.O { color: var(--o); }
+
+        .status-bar { margin: 10px; padding: 10px; background: var(--card); border-radius: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <h3>Lobby & Beállítások</h3>
+    <div class="input-group">
+        <input type="text" id="nev" placeholder="Név">
+        <input type="text" id="kod" placeholder="Csoport kód">
+        <input type="text" id="jatek" placeholder="Játék neve (API útvonal)">
+        <input type="number" id="maxJatekos" value="2" placeholder="Max fő">
+    </div>
+    <div style="display:flex; gap:5px;">
+        <button onclick="letrehozPost()" style="flex:1">Létrehozás (POST)</button>
+        <button onclick="loginPost()" style="flex:1">Belépés (POST)</button>
+        <button onclick="loginGet()" style="flex:1">Lista (GET)</button>
+    </div>
+    <div id="userek" style="margin-top:10px;"></div>
+</div>
+
+<div id="game-container">
+    <div class="status-bar" id="status">Várakozás...</div>
+    <div class="board-wrapper">
+        <div id="board"></div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = "https://pepa.hu/api/jatekApi/"; // Ha szükséges az elejére
+    let gridData = Array(50).fill().map(() => Array(50).fill(""));
+
+    // --- LOBBY LOGIKA (A beküldött alapján) ---
+    function letrehozPost(){
+        
+        const nev = document.getElementById("nev").value;
+        const kod = document.getElementById("kod").value;
+        const jatek = document.getElementById("jatek").value;
+        const maxJatekos = document.getElementById("maxJatekos").value;
+
+        if(!nev || !kod || !jatek) return;
+        let url = "https://pepa.hu/api/jatekApi/otodolo/player"
+        fetch()
+
+
+
+
+    }
+    function loginPost() {
+        const nev = document.getElementById("nev").value;
+        const kod = document.getElementById("kod").value;
+        const jatek = document.getElementById("jatek").value;
+        const maxJatekos = document.getElementById("maxJatekos").value;
+        if(!nev || !kod || !jatek) return;
+
+        fetch(`${jatek}/player`, {
+            method: "POST",
+            body: JSON.stringify({ name: nev, code: kod, maxJatekos: maxJatekos })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if(data.error) document.getElementById("userek").innerHTML = data.error;
+            else userList(data.user.players);
+        });
+    }
+
+    function loginGet() {
+        const nev = document.getElementById("nev").value;
+        const kod = document.getElementById("kod").value;
+        const jatek = document.getElementById("jatek").value;
+        if(!nev || !kod || !jatek) return;
+
+        fetch(`${jatek}/lobby/${nev}/${kod}`)
+        .then(r => r.json())
+        .then(data => {
+            if(data.error) return;
+            userList(data.user.players);
+            
+            // Ha mindenki READY, mutassuk a táblát
+            if(data.user.players.length >= 2 && data.user.players.every(p => p.readyState === "ready")) {
+                showBoard();
+            }
+        });
+    }
+
+    function userList(players) {
+        let userDiv = document.getElementById("userek");
+        userDiv.innerHTML = "";
+        players.forEach(p => {
+            let blokk = document.createElement("div");
+            blokk.style = "display:flex; justify-content:space-between; margin-bottom:5px; background:#0f3460; padding:5px; border-radius:4px;";
+            blokk.innerHTML = `<span>${p.name} (${p.readyState})</span>`;
+            blokk.innerHTML += `<div><button onclick="ready('${p.name}')">Ready</button></div>`;
+            userDiv.appendChild(blokk);
+        });
+    }
+
+    function ready(playername) {
+        const nev = document.getElementById("nev").value;
+        const kod = document.getElementById("kod").value;
+        const jatek = document.getElementById("jatek").value;
+        fetch(`${jatek}/player/${nev}/${kod}`, {
+            method: "PUT",
+            body: JSON.stringify({ name: playername })
+        })
+        .then(r => r.json()).then(data => userList(data.user.players));
+    }
+
+    // --- JÁTÉK MEGJELENÍTÉS ÉS ADATOK ---
+    function showBoard() {
+        if(document.getElementById("game-container").style.display === "flex") return;
+        document.getElementById("game-container").style.display = "flex";
+        const board = document.getElementById("board");
+        board.innerHTML = "";
+        for(let r=0; r<50; r++) {
+            for(let c=0; c<50; c++) {
+                const cell = document.createElement("div");
+                cell.className = "cell";
+                cell.id = `cell-${r}-${c}`;
+                cell.onclick = () => cellClick(r, c);
+                board.appendChild(cell);
+            }
+        }
+    }
+
+    function cellClick(r, c) {
+        const nev = document.getElementById("nev").value;
+        const kod = document.getElementById("kod").value;
+        const jatek = document.getElementById("jatek").value;
+        
+        // Elküldjük a koordinátát JSON-ként
+        const moveData = JSON.stringify({ row: r, col: c });
+        
+        fetch(`${jatek}/turn/${nev}/${kod}`, {
+            method: "POST",
+            body: JSON.stringify({ data: moveData })
+        })
+        .then(r => r.json())
+        .then(processGameData);
+    }
+
+    function dataGet() {
+        const nev = document.getElementById("nev").value;
+        const kod = document.getElementById("kod").value;
+        const jatek = document.getElementById("jatek").value;
+        if(document.getElementById("game-container").style.display !== "flex") return;
+
+        fetch(`${jatek}/turn/${nev}/${kod}`)
+        .then(r => r.json())
+        .then(processGameData);
+    }
+
+    function processGameData(data) {
+        if(data.error) return;
+        
+        const status = document.getElementById("status");
+        const currentPlayer = data.user.players[data.user.currentPlayer];
+        status.innerHTML = `Soron következik: <b>${currentPlayer.name}</b>`;
+
+        if(data.data) {
+            try {
+                // Az API a legutóbbi lépést tárolja a 'data' mezőben
+                const lastMove = JSON.parse(data.data);
+                // Mivel az API nem tárolja az egész táblát, a kliensen gyűjtjük vagy 
+                // feltételezzük, hogy a 'data' tartalmazza a változást.
+                const symbol = data.user.currentPlayer === 0 ? "O" : "X"; // Példa kiosztás
+                const target = document.getElementById(`cell-${lastMove.row}-${lastMove.col}`);
+                if(target) {
+                    target.textContent = symbol;
+                    target.classList.add(symbol);
+                }
+            } catch(e) { console.log("Nem JSON adat érkezett"); }
+        }
+    }
+
+    // Automatikus frissítés
+    setInterval(loginGet, 2000);
+    setInterval(dataGet, 2000);
+</script>
+</body>
+</html>
