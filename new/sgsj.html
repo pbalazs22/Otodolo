@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <input type="number" id="asd">
+
+    <script>
+        let pattern = /^[0-9]{4}$/
+        let beker = document.getElementById("asd")
+        beker.addEventListener("keyup",function(event){
+            let eredmeny = pattern.test(beker.value)
+            if (eredmeny)
+            {
+                beker.style.color= "black"
+            }
+            else {beker.style.color= "red"}
+
+
+        })
+    </script>
+    
+</body>
+</html>
