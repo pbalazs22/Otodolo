@@ -3,227 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gomoku Online - pepa.hu API</title>
+    <title>Ötödölő Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        :root {
-            --bg: #1a1a2e; --card: #16213e; --accent: #4ecca3;
-            --text: #eeeeee; --x: #ff4b2b; --o: #00d2ff;
-        }
-        body {
-            font-family: sans-serif; background: var(--bg); color: var(--text);
-            margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh;
-        }
-
-        /* Lobby & Controls */
-        .controls {
-            background: var(--card); padding: 20px; border-radius: 10px;
-            margin: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 90%; max-width: 500px;
-        }
-        .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        input, button { padding: 8px; border-radius: 4px; border: none; }
-        input { background: #0f3460; color: white; }
-        button { background: var(--accent); color: #1a1a2e; font-weight: bold; cursor: pointer; }
-        button:hover { opacity: 0.8; }
-
-        /* Játéktér középre */
-        #game-container {
-            display: none; flex-direction: column; align-items: center; width: 100%;
-        }
-        .board-wrapper {
-            max-width: 95vw; max-height: 70vh; overflow: auto;
-            border: 3px solid var(--card); border-radius: 8px; background: #222;
-        }
-        #board {
-            display: grid; grid-template-columns: repeat(50, 25px); grid-template-rows: repeat(50, 25px);
-            gap: 1px; background: #444; padding: 1px;
-        }
-        .cell {
-            width: 25px; height: 25px; background: var(--bg);
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-weight: bold; font-size: 16px;
-        }
-        .cell:hover { background: #252545; }
-        .cell.X { color: var(--x); }
-        .cell.O { color: var(--o); }
-
-        .status-bar { margin: 10px; padding: 10px; background: var(--card); border-radius: 20px; }
+        :root { --bg: #1a1a2e; --panel: #16213e; --accent: #4ecca3; --text: #eee; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        .glass-card { background: var(--panel); border-radius: 15px; padding: 20px; border: 1px solid #ffffff10; }
+        .pro-input { background: #0f3460 !important; border: 1px solid var(--accent) !important; color: white !important; }
+        
+        /* Játéktér */
+        .board-area { max-width: 95vw; max-height: 70vh; overflow: auto; border: 3px solid var(--panel); border-radius: 10px; background: #222; }
+        #grid { display: grid; grid-template-columns: repeat(50, 25px); gap: 1px; background: #444; }
+        .cell { width: 25px; height: 25px; background: var(--bg); display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; font-size: 14px; }
+        
+        /* Játékos színek */
+        .p0 { color: #ff4b2b; } .p1 { color: #00d2ff; } .p2 { color: #f9d423; } .p3 { color: #b06ab3; }
+        #game-arena { display: none; text-align: center; width: 100%; }
+        .status-msg { font-size: 1.2rem; padding: 10px; margin-bottom: 10px; background: var(--panel); border-radius: 50px; border: 1px solid var(--accent); display: inline-block; }
     </style>
 </head>
 <body>
 
-<div class="controls">
-    <h3>Lobby & Beállítások</h3>
-    <div class="input-group">
-        <input type="text" id="nev" placeholder="Név">
-        <input type="text" id="kod" placeholder="Csoport kód">
-        <input type="text" id="jatek" placeholder="Játék neve (API útvonal)">
-        <input type="number" id="maxJatekos" value="2" placeholder="Max fő">
+    <h2 class="my-3" style="color: var(--accent); letter-spacing: 3px;">ÖTÖDÖLŐ</h2>
+
+    <div id="lobby-zone" class="container" style="max-width: 800px;">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="glass-card h-100">
+                    <h5>Csatlakozás</h5>
+                    <input type="text" id="in_name" class="form-control pro-input mb-2" placeholder="Neved">
+                    <input type="text" id="in_code" class="form-control pro-input mb-2" placeholder="Szoba kód">
+                    <label class="small">Maximum játékos: <b id="pc_val">2</b></label>
+                    <input type="range" id="in_limit" class="form-range" min="2" max="4" value="2" oninput="pc_val.innerText=this.value">
+                    <button class="btn btn-success w-100 mt-3 fw-bold" onclick="join()">BELÉPÉS</button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="glass-card h-100">
+                    <h5>Játékosok</h5>
+                    <div id="player_list"></div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div style="display:flex; gap:5px;">
-        <button onclick="letrehozPost()" style="flex:1">Létrehozás (POST)</button>
-        <button onclick="loginPost()" style="flex:1">Belépés (POST)</button>
-        <button onclick="loginGet()" style="flex:1">Lista (GET)</button>
+
+    <div id="game-arena">
+        <div class="status-msg">
+            Soron következik: <span id="turn_display" class="fw-bold">...</span>
+        </div>
+        <div class="board-area mx-auto">
+            <div id="grid"></div>
+        </div>
     </div>
-    <div id="userek" style="margin-top:10px;"></div>
-</div>
 
-<div id="game-container">
-    <div class="status-bar" id="status">Várakozás...</div>
-    <div class="board-wrapper">
-        <div id="board"></div>
-    </div>
-</div>
+    <script>
+        const API = "https://pepa.hu/api/jatekApi/otodolo";
+        const SYMBOLS = ["X", "O", "Y", "Z"];
+        let myName, myCode, lastMove, gameOver = false;
+        let table = Array(50).fill().map(() => Array(50).fill(""));
 
-<script>
-    const API_BASE = "https://pepa.hu/api/jatekApi/"; // Ha szükséges az elejére
-    let gridData = Array(50).fill().map(() => Array(50).fill(""));
+        // Segédfüggvény az ID alapú elemekhez (hogy ne legyen ReferenceError)
+        const $ = (id) => document.getElementById(id);
 
-    // --- LOBBY LOGIKA (A beküldött alapján) ---
-    function letrehozPost(){
-        
-        const nev = document.getElementById("nev").value;
-        const kod = document.getElementById("kod").value;
-        const jatek = document.getElementById("jatek").value;
-        const maxJatekos = document.getElementById("maxJatekos").value;
+        async function join() {
+            myName = $("in_name").value.trim();
+            myCode = $("in_code").value.trim();
+            if(!myName || !myCode) return alert("Adj meg nevet és kódot!");
 
-        if(!nev || !kod || !jatek) return;
-        let url = "https://pepa.hu/api/jatekApi/otodolo/player"
-        fetch()
+            let res = await fetch(`${API}/player`, {
+                method: "POST", headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ name: myName, code: myCode, maxJatekos: parseInt($("in_limit").value) })
+            }).then(r => r.json());
 
+            if(res.error) alert(res.error);
+            else setInterval(lobbySync, 2000);
+        }
 
+        async function lobbySync() {
+            let res = await fetch(`${API}/lobby/${myName}/${myCode}`).then(r => r.json());
+            if(res.error) return;
 
+            let players = res.user.players;
+            let isHost = players[0].name === myName;
 
-    }
-    function loginPost() {
-        const nev = document.getElementById("nev").value;
-        const kod = document.getElementById("kod").value;
-        const jatek = document.getElementById("jatek").value;
-        const maxJatekos = document.getElementById("maxJatekos").value;
-        if(!nev || !kod || !jatek) return;
+            $("player_list").innerHTML = players.map((p, i) => `
+                <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark rounded">
+                    <span>${p.name} ${i==0?'<small class="text-warning">[HOST]</small>':''}</span>
+                    <span>
+                        ${isHost && p.name!=myName ? `<button class="btn btn-danger btn-sm py-0" onclick="kick('${p.name}')">X</button>` : ''}
+                        ${p.name==myName ? `<button class="btn btn-sm ${p.readyState=='ready'?'btn-success':'btn-outline-secondary'}" onclick="toggleReady()">READY</button>` : `<small>(${p.readyState})</small>`}
+                    </span>
+                </div>
+            `).join('');
 
-        fetch(`${jatek}/player`, {
-            method: "POST",
-            body: JSON.stringify({ name: nev, code: kod, maxJatekos: maxJatekos })
-        })
-        .then(r => r.json())
-        .then(data => {
-            if(data.error) document.getElementById("userek").innerHTML = data.error;
-            else userList(data.user.players);
-        });
-    }
+            if(players.length >= 2 && players.every(p => p.readyState == 'ready')) start();
+        }
 
-    function loginGet() {
-        const nev = document.getElementById("nev").value;
-        const kod = document.getElementById("kod").value;
-        const jatek = document.getElementById("jatek").value;
-        if(!nev || !kod || !jatek) return;
+        function kick(n) { fetch(`${API}/player/${n}/${myCode}`, { method: "DELETE" }); }
+        function toggleReady() { fetch(`${API}/player/${myName}/${myCode}`, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({name:myName}) }); }
 
-        fetch(`${jatek}/lobby/${nev}/${kod}`)
-        .then(r => r.json())
-        .then(data => {
-            if(data.error) return;
-            userList(data.user.players);
+        function start() {
+            $("lobby-zone").style.display = "none";
+            $("game-arena").style.display = "block";
+            if($("grid").children.length > 0) return; // Már legenerálva
             
-            // Ha mindenki READY, mutassuk a táblát
-            if(data.user.players.length >= 2 && data.user.players.every(p => p.readyState === "ready")) {
-                showBoard();
+            for(let r=0; r<50; r++) for(let c=0; c<50; c++) {
+                let d = document.createElement("div");
+                d.className = "cell"; d.id = `c${r}-${c}`;
+                d.onclick = () => {
+                    if(gameOver || table[r][c] != "") return;
+                    fetch(`${API}/turn/${myName}/${myCode}`, {
+                        method: "POST", headers: {"Content-Type":"application/json"},
+                        body: JSON.stringify({ data: JSON.stringify({ r, c }) })
+                    });
+                };
+                $("grid").appendChild(d);
             }
-        });
-    }
-
-    function userList(players) {
-        let userDiv = document.getElementById("userek");
-        userDiv.innerHTML = "";
-        players.forEach(p => {
-            let blokk = document.createElement("div");
-            blokk.style = "display:flex; justify-content:space-between; margin-bottom:5px; background:#0f3460; padding:5px; border-radius:4px;";
-            blokk.innerHTML = `<span>${p.name} (${p.readyState})</span>`;
-            blokk.innerHTML += `<div><button onclick="ready('${p.name}')">Ready</button></div>`;
-            userDiv.appendChild(blokk);
-        });
-    }
-
-    function ready(playername) {
-        const nev = document.getElementById("nev").value;
-        const kod = document.getElementById("kod").value;
-        const jatek = document.getElementById("jatek").value;
-        fetch(`${jatek}/player/${nev}/${kod}`, {
-            method: "PUT",
-            body: JSON.stringify({ name: playername })
-        })
-        .then(r => r.json()).then(data => userList(data.user.players));
-    }
-
-    // --- JÁTÉK MEGJELENÍTÉS ÉS ADATOK ---
-    function showBoard() {
-        if(document.getElementById("game-container").style.display === "flex") return;
-        document.getElementById("game-container").style.display = "flex";
-        const board = document.getElementById("board");
-        board.innerHTML = "";
-        for(let r=0; r<50; r++) {
-            for(let c=0; c<50; c++) {
-                const cell = document.createElement("div");
-                cell.className = "cell";
-                cell.id = `cell-${r}-${c}`;
-                cell.onclick = () => cellClick(r, c);
-                board.appendChild(cell);
-            }
+            setInterval(gameUpdate, 2000);
         }
-    }
 
-    function cellClick(r, c) {
-        const nev = document.getElementById("nev").value;
-        const kod = document.getElementById("kod").value;
-        const jatek = document.getElementById("jatek").value;
-        
-        // Elküldjük a koordinátát JSON-ként
-        const moveData = JSON.stringify({ row: r, col: c });
-        
-        fetch(`${jatek}/turn/${nev}/${kod}`, {
-            method: "POST",
-            body: JSON.stringify({ data: moveData })
-        })
-        .then(r => r.json())
-        .then(processGameData);
-    }
+        async function gameUpdate() {
+            if(gameOver) return;
+            let res = await fetch(`${API}/turn/${myName}/${myCode}`).then(r => r.json());
+            if(res.error) return;
 
-    function dataGet() {
-        const nev = document.getElementById("nev").value;
-        const kod = document.getElementById("kod").value;
-        const jatek = document.getElementById("jatek").value;
-        if(document.getElementById("game-container").style.display !== "flex") return;
+            let players = res.user.players;
+            let currentIdx = res.user.currentPlayer;
+            
+            $("turn_display").innerText = players[currentIdx].name;
+            $("turn_display").className = `fw-bold p${currentIdx}`;
 
-        fetch(`${jatek}/turn/${nev}/${kod}`)
-        .then(r => r.json())
-        .then(processGameData);
-    }
+            if(res.data && res.data != "{}" && res.data != lastMove) {
+                let m = JSON.parse(res.data);
+                // Az API a következőt mutatja, tehát az előző tette le a jelet
+                let lastPIdx = (currentIdx - 1 + players.length) % players.length;
+                let sym = SYMBOLS[lastPIdx];
+                
+                if(table[m.r][m.c] == "") {
+                    lastMove = res.data;
+                    table[m.r][m.c] = sym;
+                    let cell = $(`c${m.r}-${m.c}`);
+                    cell.innerText = sym;
+                    cell.classList.add(`p${lastPIdx}`);
 
-    function processGameData(data) {
-        if(data.error) return;
-        
-        const status = document.getElementById("status");
-        const currentPlayer = data.user.players[data.user.currentPlayer];
-        status.innerHTML = `Soron következik: <b>${currentPlayer.name}</b>`;
-
-        if(data.data) {
-            try {
-                // Az API a legutóbbi lépést tárolja a 'data' mezőben
-                const lastMove = JSON.parse(data.data);
-                // Mivel az API nem tárolja az egész táblát, a kliensen gyűjtjük vagy 
-                // feltételezzük, hogy a 'data' tartalmazza a változást.
-                const symbol = data.user.currentPlayer === 0 ? "O" : "X"; // Példa kiosztás
-                const target = document.getElementById(`cell-${lastMove.row}-${lastMove.col}`);
-                if(target) {
-                    target.textContent = symbol;
-                    target.classList.add(symbol);
+                    if(checkWin(m.r, m.c, sym)) {
+                        gameOver = true;
+                        setTimeout(() => { alert("Vége! Nyert: " + players[lastPIdx].name); location.reload(); }, 300);
+                    }
                 }
-            } catch(e) { console.log("Nem JSON adat érkezett"); }
+            }
         }
-    }
 
-    // Automatikus frissítés
-    setInterval(loginGet, 2000);
-    setInterval(dataGet, 2000);
-</script>
+        function checkWin(r, c, s) {
+            const count = (dr, dc) => {
+                let n = 0, nr = r+dr, nc = c+dc;
+                while(nr>=0 && nr<50 && nc>=0 && nc<50 && table[nr][nc]==s) { n++; nr+=dr; nc+=dc; }
+                return n;
+            };
+            return [[0,1],[1,0],[1,1],[1,-1]].some(d => count(d[0], d[1]) + count(-d[0], -d[1]) >= 4);
+        }
+    </script>
 </body>
 </html>
