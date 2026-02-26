@@ -3,54 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ötödölő Pro</title>
+    <title>Ötödölő Pro - Végleges</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root { --bg: #1a1a2e; --panel: #16213e; --accent: #4ecca3; --text: #eee; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        .glass-card { background: var(--panel); border-radius: 15px; padding: 20px; border: 1px solid #ffffff10; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; }
+        .glass-card { background: var(--panel); border-radius: 15px; padding: 20px; border: 1px solid #ffffff10; height: 100%; }
         .pro-input { background: #0f3460 !important; border: 1px solid var(--accent) !important; color: white !important; }
         
-        /* Játéktér */
-        .board-area { max-width: 95vw; max-height: 70vh; overflow: auto; border: 3px solid var(--panel); border-radius: 10px; background: #222; }
-        #grid { display: grid; grid-template-columns: repeat(50, 25px); gap: 1px; background: #444; }
-        .cell { width: 25px; height: 25px; background: var(--bg); display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; font-size: 14px; }
-        
-        /* Játékos színek */
-        .p0 { color: #ff4b2b; } .p1 { color: #00d2ff; } .p2 { color: #f9d423; } .p3 { color: #b06ab3; }
+        #lobby-zone { width: 100%; max-width: 900px; margin-top: 20px; }
         #game-arena { display: none; text-align: center; width: 100%; }
-        .status-msg { font-size: 1.2rem; padding: 10px; margin-bottom: 10px; background: var(--panel); border-radius: 50px; border: 1px solid var(--accent); display: inline-block; }
+        
+        .board-area { max-width: 95vw; max-height: 70vh; overflow: auto; border: 3px solid var(--panel); border-radius: 10px; background: #222; margin-top: 10px; }
+        #grid { display: grid; grid-template-columns: repeat(50, 25px); gap: 1px; background: #444; }
+        .cell { width: 25px; height: 25px; background: var(--bg); display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.1s; }
+        .cell:hover { background: #2a2a45; }
+        
+        .p0 { color: #ff4b2b; } .p1 { color: #00d2ff; } .p2 { color: #f9d423; } .p3 { color: #b06ab3; }
+        .status-msg { font-size: 1.2rem; padding: 10px 30px; margin: 15px; background: var(--panel); border-radius: 50px; border: 1px solid var(--accent); display: inline-block; }
     </style>
 </head>
 <body>
 
-    <h2 class="my-3" style="color: var(--accent); letter-spacing: 3px;">ÖTÖDÖLŐ</h2>
+    <h2 class="my-3" style="color: var(--accent); font-weight: 800; letter-spacing: 2px;">ÖTÖDÖLŐ PRO</h2>
 
-    <div id="lobby-zone" class="container" style="max-width: 800px;">
+    <div id="lobby-zone" class="container">
         <div class="row g-3">
-            <div class="col-md-6">
-                <div class="glass-card h-100">
-                    <h5>Csatlakozás</h5>
-                    <input type="text" id="in_name" class="form-control pro-input mb-2" placeholder="Neved">
-                    <input type="text" id="in_code" class="form-control pro-input mb-2" placeholder="Szoba kód">
-                    <label class="small">Maximum játékos: <b id="pc_val">2</b></label>
-                    <input type="range" id="in_limit" class="form-range" min="2" max="4" value="2" oninput="pc_val.innerText=this.value">
-                    <button class="btn btn-success w-100 mt-3 fw-bold" onclick="join()">BELÉPÉS</button>
+            <div class="col-md-5">
+                <div class="glass-card">
+                    <h5>Szoba Kezelés</h5>
+                    <div id="join-controls">
+                        <input type="text" id="in_name" class="form-control pro-input mb-2" placeholder="Felhasználónév">
+                        <input type="text" id="in_code" class="form-control pro-input mb-2" placeholder="Szoba kód">
+                        <button class="btn btn-success w-100 fw-bold" onclick="join()">BELÉPÉS</button>
+                    </div>
+                    
+                    <div id="host-controls" class="mt-4 pt-3 border-top border-secondary" style="display:none">
+                        <h6 class="text-warning">Játékosszám állítása (Host)</h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="range" id="host_limit" class="form-range" min="2" max="4" value="2" oninput="document.getElementById('pc_val').innerText=this.value">
+                            <span class="badge bg-primary"><b id="pc_val">2</b> fő</span>
+                        </div>
+                        <button class="btn btn-sm btn-warning mt-2 w-100 fw-bold" onclick="sendLimit()">LIMIT MENTÉSE</button>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="glass-card h-100">
-                    <h5>Játékosok</h5>
-                    <div id="player_list"></div>
+            <div class="col-md-7">
+                <div class="glass-card">
+                    <h5>Játékosok (<span id="current_count">0</span> / <span id="max_count">2</span>)</h5>
+                    <div id="player_list" class="mt-3"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <div id="game-arena">
-        <div class="status-msg">
-            Soron következik: <span id="turn_display" class="fw-bold">...</span>
-        </div>
+        <div class="status-msg">Soron következik: <span id="turn_display" class="fw-bold">...</span></div>
         <div class="board-area mx-auto">
             <div id="grid"></div>
         </div>
@@ -59,98 +67,152 @@
     <script>
         const API = "https://pepa.hu/api/jatekApi/otodolo";
         const SYMBOLS = ["X", "O", "Y", "Z"];
-        let myName, myCode, lastMove, gameOver = false;
+        let myName, myCode, lastMove, gameOver = false, isGameRunning = false;
         let table = Array(50).fill().map(() => Array(50).fill(""));
+        let currentLimit = 2;
 
-        // Segédfüggvény az ID alapú elemekhez (hogy ne legyen ReferenceError)
+        // Segédfüggvény a hivatkozási hibák elkerülésére
         const $ = (id) => document.getElementById(id);
 
         async function join() {
             myName = $("in_name").value.trim();
             myCode = $("in_code").value.trim();
-            if(!myName || !myCode) return alert("Adj meg nevet és kódot!");
+            if(!myName || !myCode) return alert("Név és kód megadása kötelező!");
 
             let res = await fetch(`${API}/player`, {
                 method: "POST", headers: {"Content-Type":"application/json"},
-                body: JSON.stringify({ name: myName, code: myCode, maxJatekos: parseInt($("in_limit").value) })
+                body: JSON.stringify({ name: myName, code: myCode, maxJatekos: 4 })
             }).then(r => r.json());
 
             if(res.error) alert(res.error);
-            else setInterval(lobbySync, 2000);
+            else {
+                $("join-controls").innerHTML = `<div class="alert alert-info py-2 m-0">Üdv, <b>${myName}</b>!</div>`;
+                setInterval(sync, 2000);
+            }
         }
 
-        async function lobbySync() {
-            let res = await fetch(`${API}/lobby/${myName}/${myCode}`).then(r => r.json());
-            if(res.error) return;
+        async function sendLimit() {
+            let val = parseInt($("host_limit").value);
+            currentLimit = val; // Helyi frissítés azonnal
+            $("max_count").innerText = val;
 
-            let players = res.user.players;
+            // Szinkronizálás a turn-csatornán keresztül (hogy a többiek is lássák)
+            await fetch(`${API}/turn/${myName}/${myCode}`, {
+                method: "POST", headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ data: "LIMIT:" + val })
+            });
+
+            // API metaadat frissítése
+            await fetch(`${API}/player/${myName}/${myCode}`, {
+                method: "PUT", headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ name: myName, maxJatekos: val })
+            });
+            
+            console.log("Limit sikeresen beállítva: " + val);
+        }
+
+        async function sync() {
+            // 1. LOBBY lekérése (Mindig biztonságos)
+            let lobbyRes = await fetch(`${API}/lobby/${myName}/${myCode}`).then(r => r.json());
+            if(lobbyRes.error) return;
+
+            let players = lobbyRes.user.players;
             let isHost = players[0].name === myName;
 
+            // 2. TURN lekérése (Limit és lépések miatt)
+            let turnRes = await fetch(`${API}/turn/${myName}/${myCode}`).then(r => r.json());
+            
+            // Limit szinkronizálása a turn-adatból
+            if (!turnRes.error && turnRes.data && turnRes.data.startsWith("LIMIT:")) {
+                currentLimit = parseInt(turnRes.data.replace("LIMIT:", ""));
+            } else if (lobbyRes.user.maxJatekos && !isHost) {
+                currentLimit = lobbyRes.user.maxJatekos;
+            }
+
+            // UI Frissítés
+            $("max_count").innerText = currentLimit;
+            $("current_count").innerText = players.length;
+            if(isHost) $("host-controls").style.display = "block";
+
             $("player_list").innerHTML = players.map((p, i) => `
-                <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark rounded">
-                    <span>${p.name} ${i==0?'<small class="text-warning">[HOST]</small>':''}</span>
+                <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-dark rounded border-start border-3 ${p.readyState=='ready'?'border-success':'border-secondary'}">
+                    <span>${p.name} ${i==0?'<small class="text-warning fw-bold ms-1">[HOST]</small>':''}</span>
                     <span>
-                        ${isHost && p.name!=myName ? `<button class="btn btn-danger btn-sm py-0" onclick="kick('${p.name}')">X</button>` : ''}
-                        ${p.name==myName ? `<button class="btn btn-sm ${p.readyState=='ready'?'btn-success':'btn-outline-secondary'}" onclick="toggleReady()">READY</button>` : `<small>(${p.readyState})</small>`}
+                        ${isHost && p.name!=myName ? `<button class="btn btn-danger btn-sm py-0 me-2" onclick="kick('${p.name}')">KICK</button>` : ''}
+                        ${p.name==myName ? `<button class="btn btn-sm ${p.readyState=='ready'?'btn-success':'btn-outline-info'}" onclick="toggleReady()">${p.readyState=='ready'?'KÉSZ':'KÉSZ?'}</button>` : `<small class="text-muted">${p.readyState}</small>`}
                     </span>
                 </div>
             `).join('');
 
-            if(players.length >= 2 && players.every(p => p.readyState == 'ready')) start();
+            // Játék indítása feltétel
+            if(!isGameRunning && players.length >= 2 && players.every(p => p.readyState == 'ready')) {
+                // Ha az utolsó üzenet egy LIMIT volt, akkor "töröljük", hogy ne zavarja a táblát
+                if (!turnRes.error && turnRes.data && turnRes.data.startsWith("LIMIT:")) lastMove = turnRes.data;
+                start();
+            }
+
+            if(isGameRunning && !turnRes.error) gameUpdate(turnRes);
         }
 
         function kick(n) { fetch(`${API}/player/${n}/${myCode}`, { method: "DELETE" }); }
-        function toggleReady() { fetch(`${API}/player/${myName}/${myCode}`, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({name:myName}) }); }
-
-        function start() {
-            $("lobby-zone").style.display = "none";
-            $("game-arena").style.display = "block";
-            if($("grid").children.length > 0) return; // Már legenerálva
-            
-            for(let r=0; r<50; r++) for(let c=0; c<50; c++) {
-                let d = document.createElement("div");
-                d.className = "cell"; d.id = `c${r}-${c}`;
-                d.onclick = () => {
-                    if(gameOver || table[r][c] != "") return;
-                    fetch(`${API}/turn/${myName}/${myCode}`, {
-                        method: "POST", headers: {"Content-Type":"application/json"},
-                        body: JSON.stringify({ data: JSON.stringify({ r, c }) })
-                    });
-                };
-                $("grid").appendChild(d);
-            }
-            setInterval(gameUpdate, 2000);
+        
+        function toggleReady() { 
+            fetch(`${API}/player/${myName}/${myCode}`, { 
+                method: "PUT", headers: {"Content-Type":"application/json"}, 
+                body: JSON.stringify({name:myName}) 
+            }); 
         }
 
-        async function gameUpdate() {
-            if(gameOver) return;
-            let res = await fetch(`${API}/turn/${myName}/${myCode}`).then(r => r.json());
-            if(res.error) return;
+        function start() {
+            isGameRunning = true;
+            $("lobby-zone").style.display = "none";
+            $("game-arena").style.display = "block";
+            
+            if($("grid").children.length === 0) {
+                for(let r=0; r<50; r++) for(let c=0; c<50; c++) {
+                    let d = document.createElement("div");
+                    d.className = "cell"; d.id = `c${r}-${c}`;
+                    d.onclick = () => {
+                        if(gameOver || table[r][c] != "") return;
+                        fetch(`${API}/turn/${myName}/${myCode}`, {
+                            method: "POST", headers: {"Content-Type":"application/json"},
+                            body: JSON.stringify({ data: JSON.stringify({ r, c }) })
+                        });
+                    };
+                    $("grid").appendChild(d);
+                }
+            }
+        }
 
+        function gameUpdate(res) {
+            if(gameOver) return;
             let players = res.user.players;
             let currentIdx = res.user.currentPlayer;
             
+            // Kinek a köre?
             $("turn_display").innerText = players[currentIdx].name;
             $("turn_display").className = `fw-bold p${currentIdx}`;
 
-            if(res.data && res.data != "{}" && res.data != lastMove) {
-                let m = JSON.parse(res.data);
-                // Az API a következőt mutatja, tehát az előző tette le a jelet
-                let lastPIdx = (currentIdx - 1 + players.length) % players.length;
-                let sym = SYMBOLS[lastPIdx];
-                
-                if(table[m.r][m.c] == "") {
-                    lastMove = res.data;
-                    table[m.r][m.c] = sym;
-                    let cell = $(`c${m.r}-${m.c}`);
-                    cell.innerText = sym;
-                    cell.classList.add(`p${lastPIdx}`);
+            // Új lépés ellenőrzése
+            if(res.data && res.data != "{}" && res.data != lastMove && !res.data.startsWith("LIMIT:")) {
+                try {
+                    let m = JSON.parse(res.data);
+                    let lastPIdx = (currentIdx - 1 + players.length) % players.length;
+                    let sym = SYMBOLS[lastPIdx];
+                    
+                    if(table[m.r][m.c] == "") {
+                        lastMove = res.data;
+                        table[m.r][m.c] = sym;
+                        let cell = $(`c${m.r}-${m.c}`);
+                        cell.innerText = sym;
+                        cell.classList.add(`p${lastPIdx}`);
 
-                    if(checkWin(m.r, m.c, sym)) {
-                        gameOver = true;
-                        setTimeout(() => { alert("Vége! Nyert: " + players[lastPIdx].name); location.reload(); }, 300);
+                        if(checkWin(m.r, m.c, sym)) {
+                            gameOver = true;
+                            setTimeout(() => { alert("Gratulálok! A győztes: " + players[lastPIdx].name); location.reload(); }, 300);
+                        }
                     }
-                }
+                } catch(e) { console.warn("Nem játék-koordináta érkezett."); }
             }
         }
 
